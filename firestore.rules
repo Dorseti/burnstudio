@@ -1,0 +1,75 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function getRole() {
+      return isSignedIn()
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : null;
+    }
+
+    function isAdmin() {
+      return getRole() == 'admin';
+    }
+
+    // ---------- users: профили и роли ----------
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      // при регистрации пользователь может создать только свой профиль
+      // и только с ролью "user" (админом можно стать только через админ-панель)
+      allow create: if isOwner(userId) && request.resource.data.role == 'user';
+      // сам пользователь не может менять себе роль, только имя/телефон;
+      // администратор может менять всё, включая роль
+      allow update: if isAdmin()
+        || (isOwner(userId)
+            && request.resource.data.role == resource.data.role
+            && request.resource.data.email == resource.data.email
+            && request.resource.data.createdAt == resource.data.createdAt
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['name', 'phone', 'updatedAt']));
+      allow delete: if isAdmin();
+    }
+
+    // ---------- services: каталог услуг (основная сущность) ----------
+    match /services/{serviceId} {
+      allow read: if true; // каталог публичный
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ---------- bookings: активные записи ----------
+    match /bookings/{bookingId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      // пользователь может менять/удалять только свою запись, пока она "pending";
+      // администратор может менять/удалять любую (подтверждение, отмена)
+      allow update: if isAdmin()
+        || (isOwner(resource.data.userId) && resource.data.status == 'pending');
+      allow delete: if isAdmin()
+        || (isOwner(resource.data.userId) && resource.data.status == 'pending');
+    }
+
+    // ---------- history: завершённые записи (архив) ----------
+    match /history/{historyId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      // перевод записи в историю делает только администратор ("Завершить")
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ---------- reviews: отзывы на услуги ----------
+    match /reviews/{reviewId} {
+      allow read: if true; // отзывы видны всем
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      // редактировать/удалять отзыв может автор или админ (модерация)
+      allow update, delete: if isAdmin() || isOwner(resource.data.userId);
+    }
+  }
+}

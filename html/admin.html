@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админ-панель — Burn Studio Booking</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="bg"></div>
+
+  <header class="header">
+    <h1 class="title">Burn Studio Booking</h1>
+    <p class="subtitle">Админ-панель</p>
+    <nav style="margin-top: 16px; display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
+      <a class="btn-ghost" href="./index.html" style="width:auto; margin-top:0; text-decoration:none;">Каталог</a>
+    </nav>
+    <nav id="auth-slot" class="auth-nav"></nav>
+  </header>
+
+  <div id="alert-container" class="alerts"></div>
+
+  <main class="layout" style="grid-template-columns: 1fr;">
+    <section class="panel">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="services-tab">Услуги</button>
+        <button class="tab-btn" data-tab="bookings-tab">Записи</button>
+        <button class="tab-btn" data-tab="users-tab">Пользователи</button>
+        <button class="tab-btn" data-tab="reviews-tab">Отзывы</button>
+        <button class="tab-btn" data-tab="stats-tab">Статистика</button>
+      </div>
+
+      <div id="services-tab" class="tab-panel active">
+        <div class="panel-top">
+          <h2 class="panel-title">Добавить / редактировать услугу</h2>
+          <div class="panel-chip" id="service-form-mode">Новая</div>
+        </div>
+        <form id="service-form" class="form">
+          <input type="hidden" id="service-id">
+          <div class="grid">
+            <div class="field">
+              <label for="s-name">Название *</label>
+              <input type="text" id="s-name" placeholder="Например: Минимализм">
+            </div>
+            <div class="field">
+              <label for="s-category">Категория / стиль *</label>
+              <select id="s-category">
+                <option>Минимализм</option>
+                <option>Блэкворк</option>
+                <option>Аниме</option>
+                <option>Реализм</option>
+                <option>Орнаментал</option>
+                <option>Другое</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="s-price">Базовая цена (KZT) *</label>
+              <input type="number" id="s-price" min="0" placeholder="20000">
+            </div>
+            <div class="field">
+              <label for="s-emoji">Эмодзи-иконка</label>
+              <input type="text" id="s-emoji" placeholder="🎨" maxlength="4">
+            </div>
+            <div class="field field-wide">
+              <label for="s-image-url">Ссылка на фотографию</label>
+              <input type="url" id="s-image-url" placeholder="https://... (необязательно)">
+            </div>
+            <div class="field field-wide">
+              <label for="s-description">Описание *</label>
+              <textarea id="s-description" rows="3" placeholder="Опишите стиль/услугу..."></textarea>
+            </div>
+          </div>
+          <div class="form-bottom">
+            <button type="button" id="service-cancel-edit" class="btn-ghost" style="width:auto;margin-top:0;display:none;">Отменить редактирование</button>
+            <button type="submit" class="btn-primary">Сохранить услугу</button>
+          </div>
+        </form>
+        <button type="button" id="seed-services" class="btn-ghost" style="width:auto;margin-top:14px;">Добавить стартовые услуги с фото</button>
+
+        <div class="panel-top" style="margin-top: 20px;">
+          <h2 class="panel-title">Все услуги</h2>
+          <div class="panel-chip" id="services-count">0</div>
+        </div>
+        <div id="admin-services-list" class="cards"></div>
+      </div>
+
+      <div id="bookings-tab" class="tab-panel">
+        <div class="panel-top">
+          <h2 class="panel-title">Все активные записи</h2>
+          <div class="panel-chip" id="bookings-count">0</div>
+        </div>
+        <p class="center-note">Обновляется в реальном времени — новые записи появляются сразу</p>
+        <div id="admin-bookings-list" class="cards" style="margin-top: 12px;"></div>
+      </div>
+
+      <div id="users-tab" class="tab-panel">
+        <div class="panel-top">
+          <h2 class="panel-title">Пользователи</h2>
+          <div class="panel-chip" id="users-count">0</div>
+        </div>
+        <div id="users-list" class="cards"></div>
+      </div>
+
+      <div id="reviews-tab" class="tab-panel">
+        <div class="panel-top">
+          <h2 class="panel-title">Модерация отзывов</h2>
+          <div class="panel-chip" id="admin-reviews-count">0</div>
+        </div>
+        <p class="center-note">Выберите услугу, чтобы посмотреть и, при необходимости, удалить отзывы</p>
+        <select id="reviews-service-select" style="width:100%; margin: 10px 0;"></select>
+        <div id="admin-reviews-list" class="cards"></div>
+      </div>
+
+      <div id="stats-tab" class="tab-panel">
+        <div class="cards">
+          <div class="card">
+            <p><strong>Всего услуг в каталоге:</strong> <span id="stat-services">0</span></p>
+          </div>
+          <div class="card">
+            <p><strong>Активных записей:</strong> <span id="stat-active-bookings">0</span></p>
+          </div>
+          <div class="card">
+            <p><strong>Завершённых записей (история):</strong> <span id="stat-history">0</span></p>
+          </div>
+          <div class="card">
+            <p><strong>Цветных тату:</strong> <span id="stat-color">0</span> · <strong>Ч/Б:</strong> <span id="stat-bw">0</span></p>
+          </div>
+          <div class="card">
+            <p><strong>Самый популярный размер:</strong> <span id="stat-popular-size">—</span></p>
+          </div>
+          <div class="card">
+            <p><strong>Зарегистрировано пользователей:</strong> <span id="stat-users">0</span></p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="../js/admin.js"></script>
+</body>
+</html>

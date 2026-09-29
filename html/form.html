@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Добавить запись</title>
+  <meta name="description" content="Форма записи в тату-студию">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="bg"></div>
+
+  <header class="header">
+    <h1 class="title">Burn Studio Booking</h1>
+    <p class="subtitle">Новая запись</p>
+
+    <nav style="margin-top: 16px; display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
+      <a class="btn-ghost" href="./about.html" style="width:auto; margin-top:0; text-decoration:none;">О проекте</a>
+      <a class="btn-ghost" href="./index.html" style="width:auto; margin-top:0; text-decoration:none;">Каталог</a>
+    </nav>
+    <nav id="auth-slot" class="auth-nav"></nav>
+  </header>
+
+  <div id="alert-container" class="alerts"></div>
+
+  <main class="layout" style="grid-template-columns: 1fr;">
+    <section class="panel panel-form">
+      <div class="panel-top">
+        <h2 class="panel-title">Форма записи</h2>
+        <div class="panel-chip">10:00–20:00</div>
+      </div>
+
+      <p id="selected-service-note" class="center-note" style="display:none;"></p>
+
+      <form id="booking-form" class="form">
+        <div class="grid">
+          <div class="field">
+            <label for="name">Имя *</label>
+            <input type="text" id="name" autocomplete="name">
+          </div>
+
+          <div class="field">
+            <label for="contact">Телефон *</label>
+            <input type="tel" id="contact" autocomplete="tel">
+          </div>
+
+          <div class="field">
+            <label for="age">Возраст *</label>
+            <input type="number" id="age" min="0">
+          </div>
+
+          <div class="field">
+            <label for="style">Стиль тату</label>
+            <select id="style">
+              <option>Минимализм</option>
+              <option>Блэкворк</option>
+              <option>Аниме</option>
+              <option>Реализм</option>
+              <option>Орнаментал</option>
+              <option>Другое</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Размер</label>
+            <div class="segmented" role="group" aria-label="Размер">
+              <input class="seg-input" type="radio" name="size" id="size-small" value="Small" checked>
+              <label class="seg" for="size-small">Маленькая</label>
+
+              <input class="seg-input" type="radio" name="size" id="size-medium" value="Medium">
+              <label class="seg" for="size-medium">Средняя</label>
+
+              <input class="seg-input" type="radio" name="size" id="size-large" value="Large">
+              <label class="seg" for="size-large">Большая</label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Цвет</label>
+            <div class="segmented" role="group" aria-label="Цвет">
+              <input class="seg-input" type="radio" name="color" id="color-bw" value="Black&White" checked>
+              <label class="seg" for="color-bw">Ч&amp;Б</label>
+
+              <input class="seg-input" type="radio" name="color" id="color-color" value="Color">
+              <label class="seg" for="color-color">Цветная</label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="place">Место на теле</label>
+            <select id="place">
+              <option>Плечо</option>
+              <option>Ноги</option>
+              <option>Спина</option>
+              <option>Шея</option>
+              <option>Руки</option>
+              <option>Другое</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="date">Дата *</label>
+            <input type="date" id="date">
+          </div>
+
+          <div class="field field-wide">
+           <label>Время *</label>
+           <div class="slots-grid" id="slots-grid"></div>
+           <input type="hidden" id="time" required>
+          </div>
+
+          <div class="field field-wide">
+            <label for="description">Описание идеи</label>
+            <textarea id="description" rows="3" placeholder="Например: тонкие линии, символика, референсы..."></textarea>
+          </div>
+
+          <div class="field field-wide">
+            <label class="check">
+              <input type="checkbox" id="consent">
+              <span>Согласен на обработку данных *</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-bottom">
+          <div class="price" id="price">Примерная стоимость: 20 000 KZT</div>
+          <button type="submit" class="btn-primary">Сохранить</button>
+          <a href="./index.html" class="btn-ghost" style="width:auto; margin-top:0; text-decoration:none; text-align:center;">На главную</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+ <script type="module" src="../js/form.js"></script>
+</body>
+
+</html>
