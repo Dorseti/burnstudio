@@ -74,7 +74,6 @@ async function bootstrap() {
       await renderSlots(editingBooking.time);
     }
   } else {
-    // Автоматически выставляем сегодняшнюю дату и сразу подгружаем доступные слоты
     dateInput.value = getTodayFormatted();
     await renderSlots();
   }
@@ -126,17 +125,28 @@ async function renderSlots(preselect = null) {
   }
 
   const renderId = ++currentRenderId;
-  const taken = await fetchTakenSlots(selectedDate);
+  let taken = [];
+
+  try {
+    taken = await fetchTakenSlots(selectedDate);
+  } catch (err) {
+    console.error("Ошибка при получении слотов:", err);
+    grid.innerHTML = `<p style="font-size:13px; color:red; grid-column: 1 / -1;">Не удалось загрузить время. Проверьте подключение.</p>`;
+    return;
+  }
 
   if (renderId !== currentRenderId) return;
   grid.innerHTML = "";
 
   const now = new Date();
+  const [year, month, day] = selectedDate.split("-").map(Number);
 
   SLOTS.forEach(slot => {
     const isTaken = taken.includes(slot) && !(editingBooking && editingBooking.date === selectedDate && editingBooking.time === slot);
 
-    const slotDateTime = new Date(`${selectedDate}T${slot}`);
+    // Парсим дату вручную, чтобы мобильные браузеры (Safari) не выдавали Invalid Date
+    const [hours, minutes] = slot.split(":").map(Number);
+    const slotDateTime = new Date(year, month - 1, day, hours, minutes);
     const isPast = slotDateTime < now;
     const isDisabled = isTaken || isPast;
 
@@ -170,14 +180,17 @@ function validateForm(data) {
     showAlert(alertContainer, "Запись доступна только с 18 лет", "error");
     return false;
   }
+  
+  const [y, m, d] = data.date.split("-").map(Number);
+  const [h, min] = data.time.split(":").map(Number);
+  const selected = new Date(y, m - 1, d, h, min);
   const now = new Date();
-  const selected = new Date(`${data.date}T${data.time}`);
+
   if (selected < now) {
     showAlert(alertContainer, "Нельзя выбрать прошедшую дату или время", "error");
     return false;
   }
-  const hour = parseInt(data.time.split(":")[0], 10);
-  if (hour < 10 || hour >= 20) {
+  if (h < 10 || h >= 20) {
     showAlert(alertContainer, "Рабочие часы студии: 10:00–20:00", "error");
     return false;
   }
@@ -253,6 +266,15 @@ if (contactInput) {
   });
 }
 
-dateInput.addEventListener("input", () => renderSlots());
-dateInput.addEventListener("change", () => renderSlots());
+// Открытие календаря по нажатию в любую точку инпута на мобиле
+if (dateInput) {
+  dateInput.addEventListener("click", () => {
+    if (typeof dateInput.showPicker === "function") {
+      try { dateInput.showPicker(); } catch (e) {}
+    }
+  });
+  dateInput.addEventListener("input", () => renderSlots());
+  dateInput.addEventListener("change", () => renderSlots());
+}
+
 bootstrap();
