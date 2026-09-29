@@ -24,6 +24,15 @@ let currentUser = null;
 let currentProfile = null;
 let selectedService = null;
 let editingBooking = null;
+let currentRenderId = 0; // Для защиты от задвоения слотов
+
+function getTodayFormatted() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
 
 async function bootstrap() {
   currentUser = await requireAuth("./login.html");
@@ -41,6 +50,8 @@ async function bootstrap() {
     }
   }
 
+  setMinDate(dateInput);
+
   if (editId) {
     editingBooking = await getBooking(editId);
     if (editingBooking && editingBooking.userId === currentUser.uid) {
@@ -52,13 +63,22 @@ async function bootstrap() {
       document.getElementById("date").value = editingBooking.date;
       document.getElementById("description").value = editingBooking.description || "";
       document.getElementById("consent").checked = true;
-      if (editingBooking.size) document.querySelector(`input[name="size"][value="${editingBooking.size}"]`).checked = true;
-      if (editingBooking.color) document.querySelector(`input[name="color"][value="${editingBooking.color}"]`).checked = true;
-      renderSlots(editingBooking.time);
+      if (editingBooking.size) {
+        const sizeRadio = document.querySelector(`input[name="size"][value="${editingBooking.size}"]`);
+        if (sizeRadio) sizeRadio.checked = true;
+      }
+      if (editingBooking.color) {
+        const colorRadio = document.querySelector(`input[name="color"][value="${editingBooking.color}"]`);
+        if (colorRadio) colorRadio.checked = true;
+      }
+      await renderSlots(editingBooking.time);
     }
+  } else {
+    // Автоматически выставляем сегодняшнюю дату и сразу подгружаем доступные слоты
+    dateInput.value = getTodayFormatted();
+    await renderSlots();
   }
 
-  setMinDate(dateInput);
   updatePrice();
 }
 
@@ -100,20 +120,36 @@ async function renderSlots(preselect = null) {
   grid.innerHTML = "";
   timeInput.value = "";
 
-  if (!selectedDate) return;
+  if (!selectedDate) {
+    grid.innerHTML = `<p style="font-size:13px; color:var(--muted); grid-column: 1 / -1;">Выберите дату выше, чтобы увидеть доступные слоты времени</p>`;
+    return;
+  }
 
+  const renderId = ++currentRenderId;
   const taken = await fetchTakenSlots(selectedDate);
+
+  if (renderId !== currentRenderId) return;
+  grid.innerHTML = "";
+
+  const now = new Date();
 
   SLOTS.forEach(slot => {
     const isTaken = taken.includes(slot) && !(editingBooking && editingBooking.date === selectedDate && editingBooking.time === slot);
 
+    const slotDateTime = new Date(`${selectedDate}T${slot}`);
+    const isPast = slotDateTime < now;
+    const isDisabled = isTaken || isPast;
+
     const btn = document.createElement("button");
     btn.type = "button";
     btn.textContent = slot;
-    btn.className = "slot-btn" + (isTaken ? " slot-taken" : " slot-free");
-    btn.disabled = isTaken;
-    if (preselect === slot) btn.classList.add("slot-selected");
-    if (preselect === slot) timeInput.value = slot;
+    btn.className = "slot-btn" + (isDisabled ? " slot-taken" : " slot-free");
+    btn.disabled = isDisabled;
+
+    if (preselect === slot && !isDisabled) {
+      btn.classList.add("slot-selected");
+      timeInput.value = slot;
+    }
 
     btn.addEventListener("click", () => {
       document.querySelectorAll(".slot-btn").forEach(b => b.classList.remove("slot-selected"));
@@ -155,8 +191,8 @@ function validateForm(data) {
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const size = document.querySelector('input[name="size"]:checked').value;
-  const color = document.querySelector('input[name="color"]:checked').value;
+  const size = document.querySelector('input[name="size"]:checked')?.value || "Small";
+  const color = document.querySelector('input[name="color"]:checked')?.value || "Black&White";
   const price = calculatePrice(size, color);
 
   const data = {
@@ -178,7 +214,6 @@ form.addEventListener("submit", async (e) => {
 
   if (!validateForm(data)) return;
 
-  // финальная проверка занятости слота на сервере (кроме своей же редактируемой записи)
   const taken = await fetchTakenSlots(data.date);
   const conflictsWithOther = taken.includes(data.time) && !(editingBooking && editingBooking.date === data.date && editingBooking.time === data.time);
   if (conflictsWithOther) {
@@ -206,15 +241,17 @@ document.querySelectorAll('input[name="size"], input[name="color"]').forEach(el 
 });
 
 const contactInput = document.getElementById('contact');
-contactInput.addEventListener('input', () => {
-  let numbers = contactInput.value.replace(/\D/g, '').substring(0, 11);
-  let formatted = '';
-  if (numbers.length > 0) formatted = numbers.substring(0, 1);
-  if (numbers.length > 1) formatted += ' ' + numbers.substring(1, 4);
-  if (numbers.length > 4) formatted += ' ' + numbers.substring(4, 7);
-  if (numbers.length > 7) formatted += ' ' + numbers.substring(7, 11);
-  contactInput.value = formatted;
-});
+if (contactInput) {
+  contactInput.addEventListener('input', () => {
+    let numbers = contactInput.value.replace(/\D/g, '').substring(0, 11);
+    let formatted = '';
+    if (numbers.length > 0) formatted = numbers.substring(0, 1);
+    if (numbers.length > 1) formatted += ' ' + numbers.substring(1, 4);
+    if (numbers.length > 4) formatted += ' ' + numbers.substring(4, 7);
+    if (numbers.length > 7) formatted += ' ' + numbers.substring(7, 11);
+    contactInput.value = formatted;
+  });
+}
 
 dateInput.addEventListener("change", () => renderSlots());
 
