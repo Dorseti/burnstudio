@@ -253,6 +253,6 @@ if (contactInput) {
   });
 }
 
+dateInput.addEventListener("input", () => renderSlots());
 dateInput.addEventListener("change", () => renderSlots());
-
 bootstrap();
